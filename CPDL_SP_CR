@@ -1,0 +1,118 @@
+alter procedure [dbo].[pExt_CSApprovalPriceComparision1](@iEnqId int,@p1 int,@p2 int,@p3 int,@p4 int,@p5 int)
+as
+begin
+--    declare @iEnqId int = 3
+
+    select
+        
+        Recipeengineering,
+        [Floor],
+        [UOM],
+        MAX(Quantity) Quantity,
+        MAX(Vendor1) Vendor1,
+        MAX(Vendor2) Vendor2,
+        MAX(Vendor3) Vendor3,
+        MAX(Vendor4) Vendor4,
+        MAX([CPDLRate]) [CPDLRate],
+		max(Totalvendor1)[TotalVendor1],
+		max(TotalVendor2)[TotalVendor2],
+		max(TotalVendor3)[TotalVendor3],
+		max(TotalVendor4)[TotalVendor4],
+		max(TotalVendor5)[TotalVendor5]
+		
+    from 
+    (select 
+        iMasterId,
+        Recipeengineering,
+        [Floor],
+        [UOM],
+        Quantity,
+        Rate Vendor1,
+        0.00 Vendor2,
+        0.00 Vendor3,
+        0.00 Vendor4,
+        0.00 [CPDLRate],
+		Quantity*Rate [Totalvendor1],
+		0.00 [TotalVendor2],
+		0.00 [TotalVendor3],
+		0.00 [TotalVendor4],
+		0.00 [TotalVendor5]
+
+    from vExtMod_CSApprovalEngineering with (nolock) where iQuoteId=@p1 and iEnquiryId=@iEnqId
+    union all
+    select 
+        iMasterId,
+        Recipeengineering,
+        [Floor],
+        [UOM],
+        Quantity,
+        0.00 Vendor1,
+        Rate Vendor2,
+        0.00 Vendor3,
+        0.00 Vendor4,
+        0.00 [CPDLRate],
+		0.00 [Totalvendor1],
+		Quantity*Rate [TotalVendor2],
+		0.00 [TotalVendor3],
+		0.00 [TotalVendor4],
+		0.00 [TotalVendor5]
+    from vExtMod_CSApprovalEngineering  with (nolock) where iQuoteId=@p2 and iEnquiryId=@iEnqId
+    union all
+    select 
+        iMasterId,
+        Recipeengineering,
+        [Floor],
+        [UOM],
+        Quantity,
+        0.00 Vendor1,
+        0.00 Vendor2,
+        Rate Vendor3,
+        0.00 Vendor4,
+        0.00 [CPDLRate],
+		0.00 [Totalvendor1],
+		0.00 [TotalVendor2],
+		Quantity*Rate [TotalVendor3],
+		0.00 [TotalVendor4],
+		0.00 [TotalVendor5]
+    from vExtMod_CSApprovalEngineering  with (nolock) where iQuoteId=@p3 and iEnquiryId=@iEnqId
+    union all
+    select 
+        iMasterId,
+        Recipeengineering,
+        [Floor],
+        [UOM],
+        Quantity,
+        0.00 Vendor1,
+        0.00 Vendor2,
+        0.00 Vendor3,
+        Rate Vendor4,
+        0.00 [CPDLRate],
+		0.00 [Totalvendor1],
+		0.00 [TotalVendor2],
+		0.00 [TotalVendor3],
+		Quantity*Rate [TotalVendor4],
+		0.00 [TotalVendor5]
+    from vExtMod_CSApprovalEngineering  with (nolock) where iQuoteId=@p4 and iEnquiryId=@iEnqId
+    union all
+    select 
+        iMasterId,
+        Recipeengineering,
+        [Floor],
+        [UOM],
+        Quantity,
+        0.00 Vendor1,
+        0.00 Vendor2,
+        0.00 Vendor3,
+        0.00 Vendor4,
+        Rate [CPDLRate],
+		0.00 [Totalvendor1],
+		0.00 [TotalVendor2],
+		0.00 [TotalVendor3],
+		0.00 [TotalVendor4],
+		Quantity*Rate[TotalVendor5]
+    from vExtMod_CSApprovalEngineering  with (nolock) where iQuoteId=@p5 and iEnquiryId=@iEnqId) A
+    group by
+        Recipeengineering,
+        [Floor],
+        [UOM]
+end
