@@ -116,3 +116,117 @@ begin
         [Floor],
         [UOM]
 end
+-----------------------------crystal report sp
+--use Focus8020
+alter proc UDP_CSApprovalEngGrid (@iTransId int)
+as 
+begin
+	declare @iMasterId int = @iTransId;
+	declare @iWorkEnquiry int=0;
+	declare @iWorkQuote1 int=0;
+	declare @iWorkQuote2 int=0;
+	declare @iWorkQuote3 int=0;
+	declare @iWorkQuote4 int=0;
+	declare @iVendor1 int=0;
+	declare @iVendor2 int=0;
+	declare @iVendor3 int=0;
+	declare @iVendor4 int=0;
+	declare @iVendor1Checked bit=0;
+	declare @iVendor2Checked bit=0;
+	declare @iVendor3Checked bit=0;
+	declare @iVendor4Checked bit=0;
+	declare @iVendorName1 varchar(200)='';
+	declare @iVendorName2 varchar(200)='';
+	declare @iVendorName3 varchar(200)='';
+	declare @iVendorName4 varchar(200)='';
+	declare @iCSWorkQuote1 int=0;
+	declare @iWorkQuoteMultiId int=0;
+
+	select 
+		@iWorkEnquiry=WorkEnquiry,
+		@iCSWorkQuote1=ClassWiseWorkQuotation,
+		@iWorkQuoteMultiId=iWorkQuoteMulti
+	from vCore_CSApprovalEngineering with(nolock)
+	where iMasterId>0 and iMasterId=@iMasterId
+
+	declare @tblWorkQ table (iRowId int identity(1,1),iWorkQuoteId int)
+	insert into @tblWorkQ
+	select * from dbo.fCrm_GetTokens(dbo.fCore_TestWorkQuotation_MultiValsId(@iWorkQuoteMultiId,0),',')
+
+	
+
+	declare @iMax int,@iMin int=1;
+	select @iMax = max(iRowId) from @tblWorkQ
+
+	while(@iMin<=@iMax)
+	begin
+
+		if(@iMin=1)
+		begin
+			set @iWorkQuote1=(select iWorkQuoteId from @tblWorkQ where iRowId=@iMin);
+			set @iVendor1 = (select VendorName from vCore_TestWorkQuotation with(nolock) where iMasterId=@iWorkQuote1)
+			set @iVendorName1 = (select sName from vCore_Account with(nolock) where iMasterId=@iVendor1)
+			set @iVendor1Checked = (select top 1  1 from vuCore_CSApprovalEngineering_General_Details with (nolock) where iMasterId=@iTransId and Vendor=@iVendor1) 
+		end
+
+		if(@iMin=2)
+		begin
+			set @iWorkQuote2=(select iWorkQuoteId from @tblWorkQ where iRowId=@iMin);
+			set @iVendor2 = (select VendorName from vCore_TestWorkQuotation with(nolock) where iMasterId=@iWorkQuote2);
+			set @iVendorName2 = (select sName from vCore_Account with(nolock) where iMasterId=@iVendor2);
+			set @iVendor2Checked = (select  top 1 1 from vuCore_CSApprovalEngineering_General_Details with (nolock) where iMasterId=@iTransId and Vendor=@iVendor2) 
+		end
+
+		if(@iMin=3)
+		begin
+			set @iWorkQuote3=(select iWorkQuoteId from @tblWorkQ where iRowId=@iMin);
+			set @iVendor3 = (select VendorName from vCore_TestWorkQuotation with(nolock) where iMasterId=@iWorkQuote3);
+			set @iVendorName3 = (select sName from vCore_Account with(nolock) where iMasterId=@iVendor3);
+			set @iVendor3Checked = (select  top 1  1 from vuCore_CSApprovalEngineering_General_Details with (nolock) where iMasterId=@iTransId and Vendor=@iVendor3) 
+		end
+
+		if(@iMin=4)
+		begin
+			set @iWorkQuote4=(select iWorkQuoteId from @tblWorkQ where iRowId=@iMin);
+			set @iVendor4 = (select VendorName from vCore_TestWorkQuotation with(nolock) where iMasterId=@iWorkQuote4);
+			set @iVendorName4 = (select sName from vCore_Account with(nolock) where iMasterId=@iVendor4);
+			set @iVendor4Checked = (select top 1 1 from vuCore_CSApprovalEngineering_General_Details with (nolock) where iMasterId=@iTransId and Vendor=@iVendor4) 
+		end
+
+		set @iMin=@iMin+1
+	end
+	
+	create table #tblCsApprovalPrint (RecipeEngineering varchar(500),Floor varchar(100),UOM varchar(100),Quantity decimal(18
+	,2),Vendor1 decimal(18,2),Vendor2 decimal(18,2),Vendor3 decimal(18,2),Vendor4 decimal(18,2),CPDLRate decimal(18,2),TotalVendor1 decimal(18,2),
+	TotalVendor2 decimal(18,2),TotalVendor3 decimal(18,2),TotalVendor4 decimal(18,2),TotalVendor5 decimal(18,2))
+
+	insert into #tblCsApprovalPrint
+	exec [pExt_CSApprovalPriceComparision1] @iWorkEnquiry,@iWorkQuote1,@iWorkQuote2,@iWorkQuote3,@iWorkQuote4,@iCSWorkQuote1
+
+
+	
+	alter table #tblCsApprovalPrint add Vendor1Name varchar(300),Vendor2Name varchar(300),Vendor3Name varchar(300),Vendor4Name varchar(300),Vendor1Checked bit,Vendor2Checked bit,Vendor3Checked bit,Vendor4Checked bit
+	update 
+		#tblCsApprovalPrint
+	set 
+		Vendor1Name=@iVendorName1,
+		Vendor2Name=@iVendorName2,
+		Vendor3Name=@iVendorName3,
+		Vendor4Name=@iVendorName4,
+		Vendor1Checked=@iVendor1Checked,
+		Vendor2Checked=@iVendor2Checked,
+		Vendor3Checked=@iVendor3Checked,
+		Vendor4Checked=@iVendor4Checked
+
+	declare @Rate1 decimal(18,2) =isnull((select sum(TotalVendor1) from #tblCsApprovalPrint ),0)
+		declare @Rate2 decimal(18,2) =isnull((select sum(TotalVendor2) from #tblCsApprovalPrint ),0)
+		declare @Rate3 decimal(18,2) =isnull((select sum(TotalVendor3) from #tblCsApprovalPrint ),0)
+		declare @Rate4 decimal(18,2) =isnull((select sum(TotalVendor4) from #tblCsApprovalPrint ),0)
+		declare @CPDL decimal(18,2) =isnull((select sum(TotalVendor5) from #tblCsApprovalPrint ),0)
+		declare @Quantity decimal(18,2) =isnull((select sum(Quantity) from #tblCsApprovalPrint ),0)
+
+	select *,@Rate1 [Rate1],@Rate2[Rate2],@Rate3[Rate3],@Rate4[Rate4],@CPDL[CPDLRate] from #tblCsApprovalPrint 
+	drop table #tblCsApprovalPrint	
+end
+
+	
